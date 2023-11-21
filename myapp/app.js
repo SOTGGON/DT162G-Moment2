@@ -1,41 +1,41 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const app = express();
 
-var app = express();
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-app.use(logger('dev'));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // Lägg till den statiska mapp där HTML-fil finns
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+const courses = require('./data/courses.json');
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+// Visa alla kurser
+app.get('/courses', (req, res) => {
+    res.json(courses); // Returnera alla kurser som JSON
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+// Visa en enskild kurs baserat på ID
+app.get('/courses/:id', (req, res) => {
+  const id = req.params.id;
+  const course = courses.find(course => course.id === parseInt(id));
+  if (!course) {
+    return res.status(404).send('Kursen hittades inte.');
+  }
+  res.json(course);
+});    
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+// Radera en kurs baserat på ID
+app.delete('/courses/:id', (req, res) => {
+  const id = req.params.id;
+  const courseIndex = courses.findIndex(course => course.id === parseInt(id));
+  if (courseIndex === -1) {
+    return res.status(404).send('Kursen hittades inte.');
+  }
+  courses.splice(courseIndex, 1);
+  res.send('Kursen har raderats.');
 });
+
 
 module.exports = app;
